@@ -6,14 +6,16 @@ const mongoose =require('mongoose')
 const axios = require('axios')
 // const todo = require('./src/models/Todo')
 // const user =require('./src/models/User')
+const usersRouter = require('./src/routes/users')
+const todosRouter = require('./src/routes/todos')
+const config = require('./config')
 
 const corsOptions = { //CORS옵션
     origin: 'http://127.0.0.1:5500', //해당 URL주소만 요청을 허락함
     credentials : true //사용자 인증이 필요한 리소스를 요청 할 수있도록 허용함
 }
 
-const CONNECT_URL = 'mongodb://127.0.0.1:27017/hailey'
-mongoose.connect(CONNECT_URL) //mongodb 연동
+mongoose.connect(config.MONGODB_URL) //mongodb 연동
 .then(()=> console.log("mongodb connected..."))
 .catch(e=> console.log(`failed to connect mongodb: ${e}`))
 
@@ -21,6 +23,8 @@ mongoose.connect(CONNECT_URL) //mongodb 연동
 app.use(cors(corsOptions)) //CORS 설정
 app.use(express.json()) //request.body 파싱
 app.use(logger('tiny')) //logger 설정
+app.use('/api/users', usersRouter) //User 라우터
+app.use('/api/todos', todosRouter) //Todo 라우터
 
 
 app.get('/hello', (req, res)=> { //URL 응답 테스트
