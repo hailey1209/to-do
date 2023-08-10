@@ -9,6 +9,16 @@ const todoSchema = new Schema({ //스키마 정의
         required: true, //항상 들어가있어야 몽고에서  오류가 안남
         ref: 'User' //사용자 모델을 참조
     },
+    category: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    imgURL:{
+        type: String,
+        required: true,
+        trim: true
+    },
     title: {
         type: String,
         required: true,
