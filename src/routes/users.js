@@ -61,6 +61,7 @@ router.put('/:id', isAuth, expressAsyncHandler(async( req, res, next)=> {
         user.name = req.body.name || user.name
         user.email = req.body.email || user.email
         user.password = req.body.password || user.password
+        user.isAdmin = req.body.isAdmin || user.isAdmin
         user.lastModifiedAt = new Date() //수정된 시각
         const updatedUser = await user.save() //변경된 정보를 db에 업데이트 해줌
         const { name, email, userId, isAdmin, createdAt } = updatedUser //업데이트된 정보를 저장

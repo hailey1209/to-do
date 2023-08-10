@@ -3,6 +3,10 @@ const Todo = require('../models/Todo')
 const expressAsyncHandler = require('express-async-handler') 
 const { isAuth } = require('../../auth')
 
+const mongoose = require('mongoose')
+const { Types: {ObjectId}} = mongoose
+
+
 const router = express.Router()
 
 // /api/todos/
@@ -103,4 +107,92 @@ router.delete('/:id', isAuth, expressAsyncHandler(async (req, res, next)=> {
     }
 }))
 
+
+//관리자 => 필드별 그룹핑
+router.get('/group/:field', isAuth, expressAsyncHandler(async(req,res,next)=>{
+    if(!req.user.isAdmin){
+        res.status(401).json({code: 401, message: 'You are not authorized to use this service'})
+    }else{
+        const docs = await Todo.aggregate([
+            {
+                $group: {
+                    _id: `$${req.params.field}`,
+                    count: {$sum: 1}
+                }
+            }
+        ])
+
+        console.log(`Number of Group: ${docs.length}`) //그룹 갯수
+        docs.sort( (d1, d2) => d1._id - d2._id) // 데이터 오름차순 정렬
+        res.json({ code: 200, docs})
+    }
+}))
+
+//사용자=> 필드별 그룹핑
+router.get('/group/mine/:field', isAuth, expressAsyncHandler(async (req, res, next)=> {
+    const docs = await Todo.aggregate([
+        {
+            $match: {
+                author: new ObjectId(req.user._id) //나의 할일 목록 필터링
+            }
+        },
+        {
+            $group: {
+                _id: `$${req.params.field}`,
+                count: { $sum: 1}
+            }
+        }
+    ])
+    console.log(`Number of Group: ${docs.length}`) //그룹 갯수
+    docs.sort( (d1, d2) => d1._id - d2._id) // 데이터 오름차순 정렬
+    res.json({ code: 200, docs})
+}))
+
+//관리자=> 날짜별 그룹핑
+router.get('/group/date/:field', isAuth, expressAsyncHandler(async (req, res, next)=> {
+    if(!req.user.isAdmin){
+        res.status(401).json({code: 401, message: '권한이 없습니다!'})
+    }else{
+        if(req.params.field === 'createdAt' || req.params.field === 'lastModifiedAt' || req.params.field === 'finishedAt'){
+            const docs = await Todo.aggregate([
+                {
+                    $group: {
+                        _id: { year: {$year: `$${req.params.field}`}, month: { $month: `$${req.params.field}`}},
+                        count: {$sum: 1}
+                    }
+                },
+                {$sort: {_id: 1}} //날짜 오름 차순 정렬
+            ])
+
+            console.log(`Number of Group: ${docs.length}`) //그룹 갯수
+            docs.sort( (d1, d2) => d1._id - d2._id) // 데이터 오름차순 정렬
+            res.json({ code: 200, docs})
+        }else{
+            res.status(204).json({ code: 204, message: 'No Content'})
+        }
+    }
+}))
+
+//사용자=> 날짜별 그룹핑
+router.get('/group/mine/date/:field', isAuth, expressAsyncHandler(async (req, res, next)=> {
+    if(req.params.field === 'createdAt' || req.params.field === 'lastModifiedAt' || req.params.field === 'finishedAt'){
+        const docs = await Todo.aggregate([
+            {
+                $match: { author: new ObjectId(req.user._id)}
+            },
+            {
+                $group: {
+                    _id: { year: {$year: `$${req.params.field}`}, month: { $month: `$${req.params.field}`}},
+                    count: {$sum: 1}
+                }
+            },
+            {$sort: {_id: 1}} //날짜 오름 차순 정렬
+        ])
+        console.log(`Number of Group: ${docs.length}`) //그룹 갯수
+        docs.sort( (d1, d2) => d1._id - d2._id) // 데이터 오름차순 정렬
+        res.json({ code: 200, docs})
+    }else{
+        res.status(204).json({ code: 204, message: 'No Content'})
+    }
+}))
 module.exports = router
